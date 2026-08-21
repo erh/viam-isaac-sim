@@ -1,6 +1,6 @@
 {
   "module_id": "erh:isaac-sim",
-  "visibility": "private",
+  "visibility": "public",
   "url": "https://github.com/erh/viam-isaac-sim",
   "description": "Control and simulate robots in NVIDIA Isaac Sim through Viam",
   "models": [
