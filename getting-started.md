@@ -8,8 +8,6 @@ These instructions were tested with:
 - isaac sim 5.0.0-rc45 installed at /isaac-sim
 - ubuntu 24.04.4
 
-- [Viam setup](#viam-setup)
-
 ## Viam setup
 
 1. Go to app.viam.com and follow the account creation flow, or sign in if you already have an account
@@ -18,12 +16,14 @@ These instructions were tested with:
 	- `~/viam-isaac` is a good default
 	- inside the new folder, download viam-server with `wget https://storage.googleapis.com/packages.viam.com/apps/viam-server/viam-server-stable-$(uname -m) && mv viam-server-stable-$(uname -m) viam-server && chmod +x viam-server && ./viam-server -version`
 1. Grab your credentials: back in the web UI, go to the status dropdown on the top menu bar. It's likely in the blue 'awaiting setup' state. Open it, hit the 'Machine cloud credentials' button, then paste the credentials into a `viam.json` file in your `~/viam-isaac` folder.
-1. Boot viam: in your terminal, run `./viam-server -config viam.json`. As it comes up, in the web UI, you should see the status dropdown turn to a green 'Online' state.
+1. Boot viam: in your terminal, run `ISAAC_SIM_PATH=/isaac-sim ./viam-server -config viam.json`. As it comes up, in the web UI, you should see the status dropdown turn to a green 'Online' state.
 
-## Configure
+## Start Isaac in Viam
 
-install the fragment
+In the 'configure' tab of the web UI, hit the '+' button or tap 'A', then tap 'B' for blocks, then find the `isaac-sim-pick-and-place` fragment from `erh` and install it. Click 'Save' in the top right.
 
-TODO: make the module public https://app.viam.com/module/erh/isaac-sim
+Switch to the 'logs' tab to watch the installed components start up. On the test machine this takes around 15 seconds. You'll see an 'event=complete' event from the rdk.activity logger when this is done.
 
-TODO: move ISAAC_SIM_PATH to config instead of env -- gui cannot override env vars in a fragment-provided module
+Now switch to the 'control' tab to interact with the cameras and arm.
+
+If something goes wrong, the place to debug is the logs tab; to cut down on noise, find the components list on the left-side menu bar and click the `erh_isaac-sim` module to filter down the output.
