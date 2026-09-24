@@ -12,6 +12,7 @@ machines without Isaac Sim installed.
 """
 
 import math
+import os
 import queue
 import sys
 import threading
@@ -233,11 +234,11 @@ class SimManager:
         streaming = cfg.livestream and cfg.headless
         launch: Dict[str, Any] = {"headless": cfg.headless}
         if streaming:
-            # SimulationApp hides kit's UI whenever headless is set, which
+            # SimulationApp hides Kit's UI whenever headless is set, which
             # leaves a connected streaming client looking at an empty frame.
-            # These mirror isaacsim.exp.full.streaming and the livestream
-            # standalone example: keep the UI, render it at a size worth
-            # streaming, and show the default grid.
+            # These mirror the Isaac Sim livestream standalone example: keep
+            # the UI, render it at a size worth streaming, and show the
+            # default grid.
             launch.update(
                 hide_ui=False,
                 width=cfg.livestream_width,
@@ -248,7 +249,10 @@ class SimManager:
                 display_options=3286,
             )
 
-        self._sim_app = SimulationApp(launch)
+        # The launcher requires a filesystem path when selecting an experience;
+        # EXP_PATH is supplied by every Isaac Sim installation.
+        experience = os.path.join(os.environ["EXP_PATH"], "isaacsim.exp.base.kit")
+        self._sim_app = SimulationApp(launch, experience=experience)
 
         try:
             import carb.settings

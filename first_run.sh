@@ -89,6 +89,7 @@ if ! command -v uv >& /dev/null; then
 	curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
-# uv sync in first_run.sh because it has a longer default timeout
+# uv sync in first_run.sh, not run.sh, because it has a longer default timeout
+export UV_NO_CACHE=false
 uv cache dir
 uv sync
