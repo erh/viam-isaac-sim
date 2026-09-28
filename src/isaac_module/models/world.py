@@ -14,6 +14,13 @@ Attributes:
   livestream_width / _height (int)  - streamed resolution, default 1280x720
   usd_stage (string)                - USD file/omniverse URL to open; if unset
                                       an empty stage with a ground plane is used
+  isaac_default_environment (bool)  - default true. When false, skip Isaac's
+                                      default environment (which bundles a
+                                      floor collider AND the scene lighting)
+                                      and instead add a plain DistantLight +
+                                      DomeLight. Use this when the arm needs
+                                      to reach negative z; the default floor
+                                      otherwise pins it
   physics_dt / rendering_dt (float) - sim step sizes, default 1/60
   boot_timeout_sec (float)          - how long to wait for kit to boot
   kit_log_level (string)            - kit console verbosity, default "warning"
@@ -90,6 +97,7 @@ class IsaacWorld(Generic, EasyResource):
             livestream_width=int(attrs.get("livestream_width", 1280)),
             livestream_height=int(attrs.get("livestream_height", 720)),
             props=[dict(p) for p in attrs.get("props", [])],
+            isaac_default_environment=bool(attrs.get("isaac_default_environment", True)),
         )
         SimManager.get().ensure_booted(cfg)
 

@@ -87,6 +87,9 @@ class SimConfig:
     # of lines at info, and viam-server records the module's stderr as
     # error-level logs, so default to warning.
     kit_log_level: str = "warning"
+    # add_default_ground_plane loads the Grid env USD, which bundles floor
+    # collider AND the lighting rig; when false, we add fallback lights
+    isaac_default_environment: bool = True
 
 
 class SimManager:
@@ -299,7 +302,10 @@ class SimManager:
             stage_units_in_meters=1.0,
         )
         if not cfg.usd_stage:
-            self.world.scene.add_default_ground_plane()
+            if cfg.isaac_default_environment:
+                self.world.scene.add_default_ground_plane()
+            else:
+                self._add_fallback_lighting()
         for prop in cfg.props:
             try:
                 self._spawn_prop(prop)
@@ -307,6 +313,17 @@ class SimManager:
                 LOGGER.exception("failed to spawn prop %s", prop.get("name"))
         self.world.reset()
         LOGGER.info("isaac sim world ready")
+
+    def _add_fallback_lighting(self) -> None:
+        from pxr import Sdf, UsdLux
+
+        stage = self.world.stage
+        distant = UsdLux.DistantLight.Define(stage, Sdf.Path("/World/DefaultDistantLight"))
+        distant.CreateIntensityAttr(3000.0)
+        distant.CreateAngleAttr(0.53)
+        dome = UsdLux.DomeLight.Define(stage, Sdf.Path("/World/DefaultDomeLight"))
+        dome.CreateIntensityAttr(500.0)
+        LOGGER.info("added fallback DistantLight + DomeLight")
 
     def _spawn_prop(self, prop: Dict[str, Any]) -> None:
         """Add a configured prop to the scene (runs on the sim thread,
