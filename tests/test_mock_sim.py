@@ -11,7 +11,7 @@ from viam.proto.app.robot import ComponentConfig
 from viam.proto.common import Vector3
 from viam.utils import dict_to_struct
 
-from isaac_module.models.arm import IsaacArm
+from isaac_module.models.arm import IsaacArm, _densify
 from isaac_module.models.base import IsaacBase
 from isaac_module.models.camera import IsaacCamera
 from isaac_module.models.world import IsaacWorld
@@ -89,6 +89,89 @@ def test_arm_moves(world):
         await arm.move_through_joint_positions(waypoints)
         end = await arm.get_joint_positions()
         assert end.values == pytest.approx([0] * 6, abs=0.5)
+
+    asyncio.run(scenario())
+
+
+def test_densify_pass_through_dense_input():
+    start = [0.0] * 6
+    wps = [[math.radians(0.5 * i)] * 6 for i in range(1, 5)]
+    out = _densify(start, wps, math.radians(2.0))
+    assert out == wps
+
+
+def test_densify_interpolates_sparse_input():
+    start = [0.0] * 6
+    wps = [[math.radians(30)] + [0.0] * 5]
+    out = _densify(start, wps, math.radians(2.0))
+    assert len(out) == 15  # 30° / 2°
+    prev = start
+    for step in out:
+        max_delta = max(abs(a - b) for a, b in zip(prev, step))
+        assert max_delta <= math.radians(2.0) + 1e-12
+        prev = step
+    assert out[-1] == pytest.approx(wps[-1])
+
+
+def test_densify_returns_final_target_exactly():
+    start = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    wps = [[0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.7, 0.0, 0.0, 0.0, 0.0, 0.0]]
+    out = _densify(start, wps, math.radians(3.0))
+    assert out[-1] == pytest.approx(wps[-1])
+
+
+def test_densify_empty_input_returns_empty():
+    assert _densify([0.0] * 6, [], math.radians(2.0)) == []
+
+
+def test_arm_reconfigure_rejects_invalid_max_step_deg(world):
+    with pytest.raises(ValueError, match="path_max_step_deg"):
+        IsaacArm.new(
+            _config("bad", {"world": "sim-world", "asset": "ur20", "path_max_step_deg": 0})
+            , {},
+        )
+
+
+def test_arm_reconfigure_rejects_invalid_control_freq(world):
+    with pytest.raises(ValueError, match="robot_control_freq_hz"):
+        IsaacArm.new(
+            _config("bad", {"world": "sim-world", "asset": "ur20", "robot_control_freq_hz": -1})
+            , {},
+        )
+
+
+def test_arm_move_through_sparse_waypoints_reaches_final_target(world):
+    arm = IsaacArm.new(
+        _config(
+            "sparse-arm",
+            {
+                "world": "sim-world",
+                "asset": "ur20",
+                "mock_dof": 6,
+                "path_max_step_deg": 2.0,
+                "robot_control_freq_hz": 200,
+                "path_tolerance_delta_deg": 1.0,
+                "move_timeout_sec": 10,
+            },
+        ),
+        {},
+    )
+
+    from viam.components.arm import JointPositions
+
+    # Non-colinear polyline: shortest path from home to final skips both
+    # intermediates, so reaching final within tolerance only proves the drives
+    # tracked the streamed intermediates.
+    waypoints = [
+        JointPositions(values=[20, 0, 0, 0, 0, 0]),
+        JointPositions(values=[-20, 0, 0, 0, 0, 0]),
+        JointPositions(values=[0, 0, 0, 0, 0, 0]),
+    ]
+
+    async def scenario():
+        await arm.move_through_joint_positions(waypoints)
+        end = await arm.get_joint_positions()
+        assert end.values == pytest.approx([0] * 6, abs=1.0)
 
     asyncio.run(scenario())
 
