@@ -11,6 +11,9 @@
 # The isaacsim download is large (10GB+); if it exceeds viam-server's default
 # first_run timeout, set "first_run_timeout": "2h0m0s" on the module config.
 set -uo pipefail
+# viam-server doesn't set a working directory for first_run; uv sync needs to
+# run next to pyproject.toml
+cd "$(dirname "$0")"
 
 log() { echo "viam-isaac-sim first_run: $*"; }
 
